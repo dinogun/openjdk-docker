@@ -1,0 +1,55 @@
+# ------------------------------------------------------------------------------
+#               NOTE: THIS DOCKERFILE IS GENERATED VIA "update.sh"
+#
+#                       PLEASE DO NOT EDIT IT DIRECTLY.
+# ------------------------------------------------------------------------------
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+FROM ubuntu:16.04
+
+MAINTAINER Dinakar Guniguntala <dinakar.g@in.ibm.com> (@dinogun)
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends wget ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV JAVA_VERSION 1.9.0_ea2
+
+RUN set -eux; \
+    JSON_URL='https://raw.githubusercontent.com/AdoptOpenJDK/openjdk9-releases/master/latest_release.json'; \
+    wget -q -O /tmp/latest.json ${JSON_URL}; \
+    ARCH="$(dpkg --print-architecture)"; \
+    case "${ARCH}" in \
+       amd64|x86_64) \
+         JAVA_URL=$(cat /tmp/latest.json | grep "browser_download_url" | grep x64 | grep -v "sha" | awk -F'"' '{ print $4 }'); \
+         ;; \
+       ppc64el|ppc64le) \
+         JAVA_URL=$(cat /tmp/latest.json | grep "browser_download_url" | grep ppc64le | grep -v "sha" | awk -F'"' '{ print $4 }'); \
+         ;; \
+       s390x) \
+         JAVA_URL=$(cat /tmp/latest.json | grep "browser_download_url" | grep s390x | grep -v "sha" | awk -F'"' '{ print $4 }'); \
+         ;; \
+       *) \
+         echo "Unsupported arch: ${ARCH}"; \
+         exit 1; \
+         ;; \
+    esac; \
+    wget -q -O /tmp/openjdk.tar.gz ${JAVA_URL}; \
+    mkdir -p /opt/java/openjdk; \
+    cd /opt/java/openjdk; \
+	tar -xvf /tmp/openjdk.tar.gz; \
+    rm -f /tmp/openjdk.tar.gz;
+
+ENV PATH=/opt/java/openjdk//bin:$PATH
