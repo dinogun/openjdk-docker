@@ -81,14 +81,14 @@ print_maint() {
 print_ubuntu_pkg() {
 	cat >> $1 <<'EOI'
 
-RUN apt-get update \
+RUN rm -rf /var/lib/apt/lists/* && apt-get clean && apt-get update \
     && apt-get install -y --no-install-recommends curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 EOI
 }
 
 # Select the alpine OS packages.
-# Install GNU glibc as J9 needs it, install libgcc_s.so from gcc-libs.tar.xz (archlinux)
+# Install GNU glibc as this OpenJDK build is compiled against glibc and not musl.
 print_alpine_pkg() {
 	cat >> $1 <<'EOI'
 
@@ -102,7 +102,7 @@ RUN apk --update add --no-cache ca-certificates curl openssl binutils xz \
     && tar -xf /tmp/gcc-libs.tar.xz -C /tmp/gcc \
     && mv /tmp/gcc/usr/lib/libgcc* /tmp/gcc/usr/lib/libstdc++* /usr/glibc-compat/lib \
     && strip /usr/glibc-compat/lib/libgcc_s.so.* /usr/glibc-compat/lib/libstdc++.so* \
-    && apk del curl binutils \
+    && apk del binutils \
     && rm -rf /tmp/${GLIBC_VER}.apk /tmp/gcc /tmp/gcc-libs.tar.xz /var/cache/apk/*
 EOI
 }
@@ -148,7 +148,7 @@ EOI
     echo "${ESUM}  /tmp/openjdk.tar.gz" | sha256sum -c -; \
     mkdir -p /opt/java/openjdk; \
     cd /opt/java/openjdk; \
-    tar -xvf /tmp/openjdk.tar.gz; \
+    tar -xf /tmp/openjdk.tar.gz; \
     rm -f /tmp/openjdk.tar.gz;
 EOI
 
