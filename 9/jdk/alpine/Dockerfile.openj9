@@ -34,32 +34,33 @@ RUN apk --update add --no-cache ca-certificates curl openssl binutils xz \
     && apk del curl binutils \
     && rm -rf /tmp/${GLIBC_VER}.apk /tmp/gcc /tmp/gcc-libs.tar.xz /var/cache/apk/*
 
-ENV JAVA_VERSION 1.9.0_ea2
+ENV JAVA_VERSION jdk-9+181
 
 RUN set -eux; \
-    JSON_URL="https://raw.githubusercontent.com/AdoptOpenJDK/openjdk9-openj9-releases/master/latest_release.json"; \
-    wget -q -O /tmp/latest.json ${JSON_URL}; \
-    export RELEASE=\$(cat /tmp/latest.json | grep "tag_name" | awk -F'"' '{ print \$4 }'); \
     ARCH="$(apk --print-arch)"; \
     case "${ARCH}" in \
        amd64|x86_64) \
-         JAVA_URL=$(cat /tmp/latest.json | grep "browser_download_url" | grep x64 | grep -v "sha" | awk -F'"' '{ print $4 }'); \
+         ESUM='74c7656a1f538476fe01471255e2d2bae57dfbd36cc6ab3bccb9c98b486c1a48'; \
+         JAVA_URL="https://api.adoptopenjdk.net/openjdk9-openj9/releases/x64_linux/latest/binary"; \
          ;; \
        ppc64el|ppc64le) \
-         JAVA_URL=$(cat /tmp/latest.json | grep "browser_download_url" | grep ppc64le | grep -v "sha" | awk -F'"' '{ print $4 }'); \
+         ESUM='32001755bac5677d8e1e0393429ac25170b31e9c89f4931a7cc99d6e42702354'; \
+         JAVA_URL="https://api.adoptopenjdk.net/openjdk9-openj9/releases/ppc64le_linux/latest/binary"; \
          ;; \
        s390x) \
-         JAVA_URL=$(cat /tmp/latest.json | grep "browser_download_url" | grep s390x | grep -v "sha" | awk -F'"' '{ print $4 }'); \
+         ESUM='e72da7026a7dac1aead810d908cb9f665ad6409b903340b0937289d1cdc70587'; \
+         JAVA_URL="https://api.adoptopenjdk.net/openjdk9-openj9/releases/s390x_linux/latest/binary"; \
          ;; \
        *) \
          echo "Unsupported arch: ${ARCH}"; \
          exit 1; \
          ;; \
     esac; \
-    wget -q -O /tmp/openjdk.tar.gz ${JAVA_URL}; \
+    curl -Lso /tmp/openjdk.tar.gz ${JAVA_URL}; \
+    echo "${ESUM}  /tmp/openjdk.tar.gz" | sha256sum -c -; \
     mkdir -p /opt/java/openjdk; \
     cd /opt/java/openjdk; \
-	tar -xvf /tmp/openjdk.tar.gz; \
+    tar -xvf /tmp/openjdk.tar.gz; \
     rm -f /tmp/openjdk.tar.gz;
 
-ENV PATH=/opt/java/openjdk//bin:$PATH
+ENV PATH=/opt/java/openjdk/jdk-9+181/bin:$PATH
